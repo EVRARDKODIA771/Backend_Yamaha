@@ -21,7 +21,9 @@ router.post("/register", async (req, res) => {
             password
         } = req.body;
 
+        // ==================================================
         // VALIDATION
+        // ==================================================
 
         if (
             !username ||
@@ -36,14 +38,27 @@ router.post("/register", async (req, res) => {
 
         }
 
+        // ==================================================
         // USER EXISTE ?
+        // ==================================================
 
-        const { data: existingUser } =
-            await supabase
-                .from("users")
-                .select("id")
-                .eq("email", email)
-                .maybeSingle();
+        const {
+            data: existingUser,
+            error: existingError
+        } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", email)
+            .maybeSingle();
+
+        if (existingError) {
+
+            return res.status(500).json({
+                success: false,
+                error: existingError.message
+            });
+
+        }
 
         if (existingUser) {
 
@@ -54,12 +69,16 @@ router.post("/register", async (req, res) => {
 
         }
 
+        // ==================================================
         // HASH PASSWORD
+        // ==================================================
 
         const password_hash =
             await bcrypt.hash(password, 10);
 
+        // ==================================================
         // INSERT USER
+        // ==================================================
 
         const {
             data: newUser,
@@ -86,7 +105,9 @@ router.post("/register", async (req, res) => {
 
         }
 
+        // ==================================================
         // JWT
+        // ==================================================
 
         const token = jwt.sign(
             {
@@ -94,11 +115,15 @@ router.post("/register", async (req, res) => {
                 email: newUser.email,
                 role: newUser.role
             },
-            process.env.SUPABASE_SECRET_KEY_,
+            process.env.JWT_SECRET,
             {
                 expiresIn: "7d"
             }
         );
+
+        // ==================================================
+        // SUCCESS
+        // ==================================================
 
         return res.json({
             success: true,
@@ -114,7 +139,7 @@ router.post("/register", async (req, res) => {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("REGISTER ERROR :", error);
 
         return res.status(500).json({
             success: false,
@@ -139,6 +164,23 @@ router.post("/login", async (req, res) => {
             password
         } = req.body;
 
+        // ==================================================
+        // VALIDATION
+        // ==================================================
+
+        if (!email || !password) {
+
+            return res.status(400).json({
+                success: false,
+                error: "Email et mot de passe requis"
+            });
+
+        }
+
+        // ==================================================
+        // GET USER
+        // ==================================================
+
         const {
             data: user,
             error
@@ -148,6 +190,15 @@ router.post("/login", async (req, res) => {
             .eq("email", email)
             .maybeSingle();
 
+        if (error) {
+
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+
+        }
+
         if (!user) {
 
             return res.status(404).json({
@@ -156,6 +207,10 @@ router.post("/login", async (req, res) => {
             });
 
         }
+
+        // ==================================================
+        // CHECK PASSWORD
+        // ==================================================
 
         const validPassword =
             await bcrypt.compare(
@@ -172,17 +227,25 @@ router.post("/login", async (req, res) => {
 
         }
 
+        // ==================================================
+        // JWT
+        // ==================================================
+
         const token = jwt.sign(
             {
                 id: user.id,
                 email: user.email,
                 role: user.role
             },
-            process.env.SUPABASE_SECRET_KEY_,
+            process.env.JWT_SECRET,
             {
                 expiresIn: "7d"
             }
         );
+
+        // ==================================================
+        // SUCCESS
+        // ==================================================
 
         return res.json({
             success: true,
@@ -198,7 +261,7 @@ router.post("/login", async (req, res) => {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("LOGIN ERROR :", error);
 
         return res.status(500).json({
             success: false,
