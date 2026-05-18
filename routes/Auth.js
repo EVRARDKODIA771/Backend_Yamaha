@@ -1,8 +1,8 @@
-import express from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
-import { supabase } from "../supabaseClient.js";
+const { supabase } = require("../supabaseClient");
 
 const router = express.Router();
 
@@ -15,39 +15,35 @@ router.post("/register", async (req, res) => {
 
     try {
 
-        const { email, password } = req.body;
+        const {
+            username,
+            email,
+            password
+        } = req.body;
 
-        // ==================================================
         // VALIDATION
-        // ==================================================
 
-        if (!email || !password) {
+        if (
+            !username ||
+            !email ||
+            !password
+        ) {
 
             return res.status(400).json({
                 success: false,
-                error: "Email et mot de passe requis"
+                error: "Tous les champs sont requis"
             });
 
         }
 
-        if (password.length < 6) {
+        // USER EXISTE ?
 
-            return res.status(400).json({
-                success: false,
-                error: "Le mot de passe doit avoir au moins 6 caractères"
-            });
-
-        }
-
-        // ==================================================
-        // VERIFIER SI USER EXISTE
-        // ==================================================
-
-        const { data: existingUser } = await supabase
-            .from("users")
-            .select("id")
-            .eq("email", email)
-            .maybeSingle();
+        const { data: existingUser } =
+            await supabase
+                .from("users")
+                .select("id")
+                .eq("email", email)
+                .maybeSingle();
 
         if (existingUser) {
 
@@ -58,22 +54,23 @@ router.post("/register", async (req, res) => {
 
         }
 
-        // ==================================================
         // HASH PASSWORD
-        // ==================================================
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const password_hash =
+            await bcrypt.hash(password, 10);
 
-        // ==================================================
         // INSERT USER
-        // ==================================================
 
-        const { data: newUser, error: insertError } = await supabase
+        const {
+            data: newUser,
+            error: insertError
+        } = await supabase
             .from("users")
             .insert([
                 {
+                    username,
                     email,
-                    password: hashedPassword,
+                    password_hash,
                     role: "user"
                 }
             ])
@@ -89,9 +86,7 @@ router.post("/register", async (req, res) => {
 
         }
 
-        // ==================================================
-        // CREATE JWT
-        // ==================================================
+        // JWT
 
         const token = jwt.sign(
             {
@@ -105,17 +100,13 @@ router.post("/register", async (req, res) => {
             }
         );
 
-        // ==================================================
-        // RESPONSE
-        // ==================================================
-
-        return res.status(201).json({
+        return res.json({
             success: true,
-            message: "Compte créé",
             token,
 
             user: {
                 id: newUser.id,
+                username: newUser.username,
                 email: newUser.email,
                 role: newUser.role
             }
@@ -143,39 +134,19 @@ router.post("/login", async (req, res) => {
 
     try {
 
-        const { email, password } = req.body;
+        const {
+            email,
+            password
+        } = req.body;
 
-        // ==================================================
-        // VALIDATION
-        // ==================================================
-
-        if (!email || !password) {
-
-            return res.status(400).json({
-                success: false,
-                error: "Email et mot de passe requis"
-            });
-
-        }
-
-        // ==================================================
-        // FIND USER
-        // ==================================================
-
-        const { data: user, error: findError } = await supabase
+        const {
+            data: user,
+            error
+        } = await supabase
             .from("users")
             .select("*")
             .eq("email", email)
             .maybeSingle();
-
-        if (findError) {
-
-            return res.status(500).json({
-                success: false,
-                error: findError.message
-            });
-
-        }
 
         if (!user) {
 
@@ -186,14 +157,11 @@ router.post("/login", async (req, res) => {
 
         }
 
-        // ==================================================
-        // CHECK PASSWORD
-        // ==================================================
-
-        const validPassword = await bcrypt.compare(
-            password,
-            user.password
-        );
+        const validPassword =
+            await bcrypt.compare(
+                password,
+                user.password_hash
+            );
 
         if (!validPassword) {
 
@@ -203,10 +171,6 @@ router.post("/login", async (req, res) => {
             });
 
         }
-
-        // ==================================================
-        // CREATE JWT
-        // ==================================================
 
         const token = jwt.sign(
             {
@@ -220,17 +184,13 @@ router.post("/login", async (req, res) => {
             }
         );
 
-        // ==================================================
-        // RESPONSE
-        // ==================================================
-
         return res.json({
             success: true,
-            message: "Connexion réussie",
             token,
 
             user: {
                 id: user.id,
+                username: user.username,
                 email: user.email,
                 role: user.role
             }
@@ -249,100 +209,4 @@ router.post("/login", async (req, res) => {
 
 });
 
-
-// ======================================================
-// VERIFY TOKEN MIDDLEWARE
-// ======================================================
-
-export const verifyToken = (req, res, next) => {
-
-    try {
-
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader) {
-
-            return res.status(401).json({
-                success: false,
-                error: "Token manquant"
-            });
-
-        }
-
-        const token = authHeader.split(" ")[1];
-
-        if (!token) {
-
-            return res.status(401).json({
-                success: false,
-                error: "Token invalide"
-            });
-
-        }
-
-        const decoded = jwt.verify(
-            token,
-            process.env.SUPABASE_SECRET_KEY_
-        );
-
-        req.user = decoded;
-
-        next();
-
-    } catch (error) {
-
-        return res.status(401).json({
-            success: false,
-            error: "Authentification échouée"
-        });
-
-    }
-
-};
-
-
-// ======================================================
-// GET CURRENT USER
-// ======================================================
-
-router.get("/me", verifyToken, async (req, res) => {
-
-    try {
-
-        const { data: user, error } = await supabase
-            .from("users")
-            .select("id, email, role, created_at")
-            .eq("id", req.user.id)
-            .single();
-
-        if (error) {
-
-            return res.status(500).json({
-                success: false,
-                error: error.message
-            });
-
-        }
-
-        return res.json({
-            success: true,
-            user
-        });
-
-    } catch (error) {
-
-        return res.status(500).json({
-            success: false,
-            error: error.message
-        });
-
-    }
-
-});
-
-
-// ======================================================
-// EXPORT
-// ======================================================
-
-export default router;
+module.exports = router;
