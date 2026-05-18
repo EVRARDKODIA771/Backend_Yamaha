@@ -3,10 +3,33 @@ const { createClient } =
 
 require("dotenv").config();
 
+// ======================================================
+// ENV CHECK
+// ======================================================
+
+if (
+    !process.env.SUPABASE_URL ||
+    !process.env.SUPABASE_SECRET_KEY
+) {
+
+    throw new Error(
+        "Missing Supabase environment variables"
+    );
+
+}
+
+// ======================================================
+// SUPABASE CLIENT
+// ======================================================
+
 const supabase = createClient(
-    process.env.SUPABASE_URL_,
-    process.env.SUPABASE_SECRET_KEY_
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET_KEY
 );
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 module.exports = {
     supabase
