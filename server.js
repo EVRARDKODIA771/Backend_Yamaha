@@ -18,34 +18,38 @@ const authRoutes = require("./routes/Auth");
 // DEBUG
 // ======================================================
 
-console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
+console.log(
+  "FRONTEND_URL =",
+  process.env.FRONTEND_URL
+);
+
+
+// ======================================================
+// ALLOWED ORIGINS
+// ======================================================
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://yamaha-sty-webs.vercel.app",
+].filter(Boolean);
 
 
 // ======================================================
 // CORS
 // ======================================================
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-];
-
 app.use(
   cors({
-
     origin: (origin, callback) => {
 
       // Postman / mobile / curl
       if (!origin) {
-
         return callback(null, true);
-
       }
 
       // Frontend autorisé
       if (allowedOrigins.includes(origin)) {
-
         return callback(null, true);
-
       }
 
       console.log("CORS BLOCKED:", origin);
@@ -53,7 +57,6 @@ app.use(
       return callback(
         new Error("CORS non autorisé")
       );
-
     },
 
     credentials: true,
@@ -70,7 +73,19 @@ app.use(
       "Content-Type",
       "Authorization",
     ],
+  })
+);
 
+
+// ======================================================
+// PRELIGHT OPTIONS
+// ======================================================
+
+app.options(
+  "*",
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
   })
 );
 
