@@ -10,7 +10,6 @@ FROM node:20-bullseye-slim
 # ======================================================
 
 ENV PYTHONUNBUFFERED=1
-
 ENV DEBIAN_FRONTEND=noninteractive
 
 
@@ -58,7 +57,8 @@ COPY requirements.txt ./
 # INSTALL PYTHON DEPENDENCIES
 # ======================================================
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir \
+    -r requirements.txt
 
 
 # ======================================================
@@ -79,4 +79,4 @@ EXPOSE 3000
 # START SERVER
 # ======================================================
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
