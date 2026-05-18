@@ -1,25 +1,90 @@
 const express = require("express");
 const cors = require("cors");
 
+console.log("====================================");
+console.log("BOOTING SERVER...");
+console.log("NODE_ENV =", process.env.NODE_ENV);
+console.log("PORT =", process.env.PORT);
+
+console.log(
+  "SUPABASE_URL =",
+  process.env.SUPABASE_URL
+);
+
+console.log(
+  "SUPABASE_SECRET_KEY EXISTS =",
+  !!process.env.SUPABASE_SECRET_KEY
+);
+
+console.log(
+  "JWT_SECRET EXISTS =",
+  !!process.env.JWT_SECRET
+);
+
+console.log("====================================");
+
 const app = express();
 
 // ======================================================
-// MIDDLEWARES
+// GLOBAL REQUEST LOGGER
+// ======================================================
+
+app.use((req, res, next) => {
+
+  console.log("====================================");
+  console.log("NEW REQUEST");
+  console.log("METHOD :", req.method);
+  console.log("URL :", req.originalUrl);
+  console.log("ORIGIN :", req.headers.origin);
+  console.log("HEADERS :", req.headers);
+  console.log("====================================");
+
+  next();
+
+});
+
+// ======================================================
+// JSON
 // ======================================================
 
 app.use(express.json());
 
-app.use(cors({
+// ======================================================
+// CORS
+// ======================================================
+
+const corsOptions = {
+
   origin: "https://yamaha-sty-webs.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS"
+  ],
+
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization"
+  ]
+
+};
+
+console.log("CORS CONFIG =", corsOptions);
+
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));
 
 // ======================================================
 // TEST ROUTE
 // ======================================================
 
 app.get("/", (req, res) => {
+
+  console.log("ROOT ROUTE HIT");
 
   res.json({
     success: true,
@@ -29,19 +94,83 @@ app.get("/", (req, res) => {
 });
 
 // ======================================================
-// ROUTES
+// AUTH ROUTES
 // ======================================================
 
-// app.use("/auth", require("./routes/Auth"));
+try {
+
+  console.log("LOADING AUTH ROUTES...");
+
+  const authRoutes =
+    require("./routes/Auth");
+
+  console.log(
+    "AUTH ROUTES LOADED SUCCESSFULLY"
+  );
+
+  app.use("/auth", authRoutes);
+
+  console.log(
+    "AUTH ROUTES REGISTERED ON /auth"
+  );
+
+} catch (error) {
+
+  console.error(
+    "FAILED TO LOAD AUTH ROUTES"
+  );
+
+  console.error(error);
+
+}
 
 // ======================================================
-// PORT
+// 404
+// ======================================================
+
+app.use((req, res) => {
+
+  console.log(
+    "404 ROUTE NOT FOUND :",
+    req.originalUrl
+  );
+
+  res.status(404).json({
+    success: false,
+    error: "Route not found"
+  });
+
+});
+
+// ======================================================
+// GLOBAL ERROR HANDLER
+// ======================================================
+
+app.use((err, req, res, next) => {
+
+  console.error("====================================");
+  console.error("GLOBAL SERVER ERROR");
+  console.error(err);
+  console.error("====================================");
+
+  res.status(500).json({
+    success: false,
+    error: err.message
+  });
+
+});
+
+// ======================================================
+// START SERVER
 // ======================================================
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
 
-  console.log("SERVER STARTED ON", PORT);
+  console.log("====================================");
+  console.log("SERVER STARTED SUCCESSFULLY");
+  console.log("LISTENING ON PORT", PORT);
+  console.log("====================================");
 
 });
