@@ -15,6 +15,13 @@ const authRoutes = require("./routes/Auth");
 
 
 // ======================================================
+// DEBUG
+// ======================================================
+
+console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
+
+
+// ======================================================
 // CORS
 // ======================================================
 
@@ -24,23 +31,46 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
 
-      // Autorise Postman, mobile apps, etc.
+    origin: (origin, callback) => {
+
+      // Postman / mobile / curl
       if (!origin) {
+
         return callback(null, true);
+
       }
 
+      // Frontend autorisé
       if (allowedOrigins.includes(origin)) {
+
         return callback(null, true);
+
       }
+
+      console.log("CORS BLOCKED:", origin);
 
       return callback(
         new Error("CORS non autorisé")
       );
+
     },
 
     credentials: true,
+
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS",
+    ],
+
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
+
   })
 );
 
@@ -59,15 +89,44 @@ app.use(
 
 
 // ======================================================
+// REQUEST LOGGER
+// ======================================================
+
+app.use((req, res, next) => {
+
+  console.log(
+    `[${req.method}] ${req.originalUrl}`
+  );
+
+  next();
+
+});
+
+
+// ======================================================
 // ROOT ROUTE
 // ======================================================
 
 app.get("/", (req, res) => {
 
-  res.json({
+  return res.json({
     success: true,
-    message: "Backend Yamaha API Running",
+    message: "Yamaha Backend API Running",
     environment: process.env.NODE_ENV,
+  });
+
+});
+
+
+// ======================================================
+// HEALTH CHECK
+// ======================================================
+
+app.get("/health", (req, res) => {
+
+  return res.json({
+    success: true,
+    status: "healthy",
   });
 
 });
@@ -86,9 +145,9 @@ app.use("/auth", authRoutes);
 
 app.use((req, res) => {
 
-  res.status(404).json({
+  return res.status(404).json({
     success: false,
-    error: "Route introuvable",
+    error: `Route ${req.originalUrl} introuvable`,
   });
 
 });
@@ -100,11 +159,14 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
 
+  console.error("GLOBAL ERROR:");
   console.error(err);
 
-  res.status(500).json({
+  return res.status(500).json({
     success: false,
-    error: err.message || "Erreur serveur",
+    error:
+      err.message ||
+      "Erreur serveur",
   });
 
 });
