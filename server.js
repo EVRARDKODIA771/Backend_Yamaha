@@ -6,186 +6,121 @@ dotenv.config();
 
 const app = express();
 
-
-// ======================================================
-// IMPORT ROUTES
-// ======================================================
-
-const authRoutes = require("./routes/Auth");
-
-
-// ======================================================
-// DEBUG
-// ======================================================
-
-console.log(
-  "FRONTEND_URL =",
-  process.env.FRONTEND_URL
-);
-
-
-// ======================================================
-// ALLOWED ORIGINS
-// ======================================================
-
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://yamaha-sty-webs.vercel.app",
 ].filter(Boolean);
 
+console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
+console.log("ALLOWED_ORIGINS =", allowedOrigins);
 
 // ======================================================
 // CORS
 // ======================================================
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
 
-      // Postman / mobile / curl
-      if (!origin) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      // Frontend autorisé
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    console.log("CORS BLOCKED:", origin);
+    return callback(new Error("CORS non autorisé"));
+  },
 
-      console.log("CORS BLOCKED:", origin);
+  credentials: true,
 
-      return callback(
-        new Error("CORS non autorisé")
-      );
-    },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 
-    credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "DELETE",
-      "OPTIONS",
-    ],
+app.use(cors(corsOptions));
 
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
-  })
-);
+// Réponse directe aux requêtes preflight
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    const origin = req.headers.origin;
 
+    if (!origin || allowedOrigins.includes(origin)) {
+      res.header("Access-Control-Allow-Origin", origin || "*");
+      res.header("Access-Control-Allow-Credentials", "true");
+      res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      return res.sendStatus(204);
+    }
+  }
 
-// ======================================================
-// PRELIGHT OPTIONS
-// ======================================================
-
-app.options(
-  "*",
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
-
+  next();
+});
 
 // ======================================================
 // MIDDLEWARES
 // ======================================================
 
 app.use(express.json());
-
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
-
+app.use(express.urlencoded({ extended: true }));
 
 // ======================================================
 // REQUEST LOGGER
 // ======================================================
 
 app.use((req, res, next) => {
-
-  console.log(
-    `[${req.method}] ${req.originalUrl}`
-  );
-
+  console.log(`[${req.method}] ${req.originalUrl}`);
   next();
-
 });
 
+// ======================================================
+// ROUTES
+// ======================================================
 
-// ======================================================
-// ROOT ROUTE
-// ======================================================
+const authRoutes = require("./routes/Auth");
 
 app.get("/", (req, res) => {
-
   return res.json({
     success: true,
     message: "Yamaha Backend API Running",
     environment: process.env.NODE_ENV,
   });
-
 });
 
-
-// ======================================================
-// HEALTH CHECK
-// ======================================================
-
 app.get("/health", (req, res) => {
-
   return res.json({
     success: true,
     status: "healthy",
   });
-
 });
 
-
-// ======================================================
-// AUTH ROUTES
-// ======================================================
-
 app.use("/auth", authRoutes);
-
 
 // ======================================================
 // 404
 // ======================================================
 
 app.use((req, res) => {
-
   return res.status(404).json({
     success: false,
     error: `Route ${req.originalUrl} introuvable`,
   });
-
 });
-
 
 // ======================================================
 // GLOBAL ERROR HANDLER
 // ======================================================
 
 app.use((err, req, res, next) => {
-
   console.error("GLOBAL ERROR:");
   console.error(err);
 
   return res.status(500).json({
     success: false,
-    error:
-      err.message ||
-      "Erreur serveur",
+    error: err.message || "Erreur serveur",
   });
-
 });
-
 
 // ======================================================
 // START SERVER
@@ -194,7 +129,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
-
   console.log(`
 ==================================================
 🚀 Yamaha Backend Running
@@ -204,5 +138,4 @@ ENVIRONMENT : ${process.env.NODE_ENV}
 FRONTEND    : ${process.env.FRONTEND_URL}
 ==================================================
 `);
-
 });
