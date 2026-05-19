@@ -7,18 +7,18 @@ console.log("NODE_ENV =", process.env.NODE_ENV);
 console.log("PORT =", process.env.PORT);
 
 console.log(
-  "SUPABASE_URL =",
-  process.env.SUPABASE_URL
+    "SUPABASE_URL =",
+    process.env.SUPABASE_URL
 );
 
 console.log(
-  "SUPABASE_SECRET_KEY EXISTS =",
-  !!process.env.SUPABASE_SECRET_KEY
+    "SUPABASE_SECRET_KEY EXISTS =",
+    !!process.env.SUPABASE_SECRET_KEY
 );
 
 console.log(
-  "JWT_SECRET EXISTS =",
-  !!process.env.JWT_SECRET
+    "JWT_SECRET EXISTS =",
+    !!process.env.JWT_SECRET
 );
 
 console.log("====================================");
@@ -31,15 +31,14 @@ const app = express();
 
 app.use((req, res, next) => {
 
-  console.log("====================================");
-  console.log("NEW REQUEST");
-  console.log("METHOD :", req.method);
-  console.log("URL :", req.originalUrl);
-  console.log("ORIGIN :", req.headers.origin);
-  console.log("HEADERS :", req.headers);
-  console.log("====================================");
+    console.log("====================================");
+    console.log("NEW REQUEST");
+    console.log("METHOD :", req.method);
+    console.log("URL :", req.originalUrl);
+    console.log("ORIGIN :", req.headers.origin);
+    console.log("====================================");
 
-  next();
+    next();
 
 });
 
@@ -55,20 +54,22 @@ app.use(express.json());
 
 const corsOptions = {
 
-  origin: "https://yamaha-sty-webs.vercel.app",
+    origin: process.env.FRONTEND_URL,
 
-  methods: [
-    "GET",
-    "POST",
-    "PUT",
-    "DELETE",
-    "OPTIONS"
-  ],
+    methods: [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+    ],
 
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization"
-  ]
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization"
+    ],
+
+    credentials: true
 
 };
 
@@ -79,17 +80,17 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
 // ======================================================
-// TEST ROUTE
+// ROOT
 // ======================================================
 
 app.get("/", (req, res) => {
 
-  console.log("ROOT ROUTE HIT");
+    console.log("ROOT ROUTE HIT");
 
-  res.json({
-    success: true,
-    message: "Server running"
-  });
+    res.json({
+        success: true,
+        message: "Server running"
+    });
 
 });
 
@@ -99,28 +100,28 @@ app.get("/", (req, res) => {
 
 try {
 
-  console.log("LOADING AUTH ROUTES...");
+    console.log("LOADING AUTH ROUTES...");
 
-  const authRoutes =
-    require("./routes/Auth");
+    const authRoutes =
+        require("./routes/Auth");
 
-  console.log(
-    "AUTH ROUTES LOADED SUCCESSFULLY"
-  );
+    console.log(
+        "AUTH ROUTES LOADED SUCCESSFULLY"
+    );
 
-  app.use("/auth", authRoutes);
+    app.use("/auth", authRoutes);
 
-  console.log(
-    "AUTH ROUTES REGISTERED ON /auth"
-  );
+    console.log(
+        "AUTH ROUTES REGISTERED ON /auth"
+    );
 
 } catch (error) {
 
-  console.error(
-    "FAILED TO LOAD AUTH ROUTES"
-  );
+    console.error(
+        "FAILED TO LOAD AUTH ROUTES"
+    );
 
-  console.error(error);
+    console.error(error);
 
 }
 
@@ -130,15 +131,15 @@ try {
 
 app.use((req, res) => {
 
-  console.log(
-    "404 ROUTE NOT FOUND :",
-    req.originalUrl
-  );
+    console.log(
+        "404 ROUTE NOT FOUND :",
+        req.originalUrl
+    );
 
-  res.status(404).json({
-    success: false,
-    error: "Route not found"
-  });
+    res.status(404).json({
+        success: false,
+        error: "Route not found"
+    });
 
 });
 
@@ -148,15 +149,15 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
 
-  console.error("====================================");
-  console.error("GLOBAL SERVER ERROR");
-  console.error(err);
-  console.error("====================================");
+    console.error("====================================");
+    console.error("GLOBAL SERVER ERROR");
+    console.error(err);
+    console.error("====================================");
 
-  res.status(500).json({
-    success: false,
-    error: err.message
-  });
+    res.status(500).json({
+        success: false,
+        error: err.message
+    });
 
 });
 
@@ -168,9 +169,9 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
 
-  console.log("====================================");
-  console.log("SERVER STARTED SUCCESSFULLY");
-  console.log("LISTENING ON PORT", PORT);
-  console.log("====================================");
+    console.log("====================================");
+    console.log("SERVER STARTED SUCCESSFULLY");
+    console.log("LISTENING ON PORT", PORT);
+    console.log("====================================");
 
 });
