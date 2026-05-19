@@ -2,10 +2,10 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const { supabase } = require("../supabaseClient");
+const { supabase } =
+    require("../supabaseClient");
 
 const router = express.Router();
-
 
 // ======================================================
 // REGISTER
@@ -14,6 +14,8 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
 
     try {
+
+        console.log("REGISTER ROUTE HIT");
 
         const {
             username,
@@ -39,7 +41,7 @@ router.post("/register", async (req, res) => {
         }
 
         // ==================================================
-        // USER EXISTE ?
+        // EXISTING USER
         // ==================================================
 
         const {
@@ -52,6 +54,8 @@ router.post("/register", async (req, res) => {
             .maybeSingle();
 
         if (existingError) {
+
+            console.error(existingError);
 
             return res.status(500).json({
                 success: false,
@@ -70,14 +74,14 @@ router.post("/register", async (req, res) => {
         }
 
         // ==================================================
-        // HASH PASSWORD
+        // HASH
         // ==================================================
 
         const password_hash =
             await bcrypt.hash(password, 10);
 
         // ==================================================
-        // INSERT USER
+        // INSERT
         // ==================================================
 
         const {
@@ -98,6 +102,8 @@ router.post("/register", async (req, res) => {
 
         if (insertError) {
 
+            console.error(insertError);
+
             return res.status(500).json({
                 success: false,
                 error: insertError.message
@@ -106,7 +112,7 @@ router.post("/register", async (req, res) => {
         }
 
         // ==================================================
-        // JWT
+        // TOKEN
         // ==================================================
 
         const token = jwt.sign(
@@ -139,7 +145,10 @@ router.post("/register", async (req, res) => {
 
     } catch (error) {
 
-        console.error("REGISTER ERROR :", error);
+        console.error(
+            "REGISTER ERROR :",
+            error
+        );
 
         return res.status(500).json({
             success: false,
@@ -150,7 +159,6 @@ router.post("/register", async (req, res) => {
 
 });
 
-
 // ======================================================
 // LOGIN
 // ======================================================
@@ -159,14 +167,12 @@ router.post("/login", async (req, res) => {
 
     try {
 
+        console.log("LOGIN ROUTE HIT");
+
         const {
             email,
             password
         } = req.body;
-
-        // ==================================================
-        // VALIDATION
-        // ==================================================
 
         if (!email || !password) {
 
@@ -176,10 +182,6 @@ router.post("/login", async (req, res) => {
             });
 
         }
-
-        // ==================================================
-        // GET USER
-        // ==================================================
 
         const {
             data: user,
@@ -191,6 +193,8 @@ router.post("/login", async (req, res) => {
             .maybeSingle();
 
         if (error) {
+
+            console.error(error);
 
             return res.status(500).json({
                 success: false,
@@ -208,10 +212,6 @@ router.post("/login", async (req, res) => {
 
         }
 
-        // ==================================================
-        // CHECK PASSWORD
-        // ==================================================
-
         const validPassword =
             await bcrypt.compare(
                 password,
@@ -227,10 +227,6 @@ router.post("/login", async (req, res) => {
 
         }
 
-        // ==================================================
-        // JWT
-        // ==================================================
-
         const token = jwt.sign(
             {
                 id: user.id,
@@ -242,10 +238,6 @@ router.post("/login", async (req, res) => {
                 expiresIn: "7d"
             }
         );
-
-        // ==================================================
-        // SUCCESS
-        // ==================================================
 
         return res.json({
             success: true,
@@ -261,7 +253,10 @@ router.post("/login", async (req, res) => {
 
     } catch (error) {
 
-        console.error("LOGIN ERROR :", error);
+        console.error(
+            "LOGIN ERROR :",
+            error
+        );
 
         return res.status(500).json({
             success: false,
